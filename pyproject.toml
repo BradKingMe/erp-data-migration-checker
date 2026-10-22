@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "erp-data-migration-checker"
+version = "0.1.0"
+description = "Compare ERP migration CSV extracts with explicit mappings and reconciliation rules."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Brad King" }]
+dependencies = []
+
+[project.scripts]
+erp-migration-check = "erp_migration_checker.cli:main"
+
+[tool.setuptools]
+packages = ["erp_migration_checker"]

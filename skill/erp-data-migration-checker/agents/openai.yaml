@@ -1,0 +1,4 @@
+interface:
+  display_name: "ERP Data Migration Checker"
+  short_description: "Review ERP CSV migrations and reconcile mapped data."
+  default_prompt: "Use $erp-data-migration-checker to review these source and target migration extracts."

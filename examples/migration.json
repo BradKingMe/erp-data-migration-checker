@@ -1,0 +1,56 @@
+{
+  "keys": [
+    {
+      "source": "invoice_id",
+      "target": "invoice_number",
+      "trim": true,
+      "case_insensitive": true
+    }
+  ],
+  "fields": [
+    {
+      "source": "customer_id",
+      "target": "customer_number",
+      "type": "string",
+      "trim": true,
+      "case_insensitive": true,
+      "allow_nulls": false
+    },
+    {
+      "source": "invoice_date",
+      "target": "transaction_date",
+      "type": "date",
+      "source_formats": ["%Y-%m-%d", "%m/%d/%Y"],
+      "target_formats": ["%Y-%m-%d", "%m/%d/%Y"],
+      "allow_nulls": false
+    },
+    {
+      "source": "amount",
+      "target": "total",
+      "type": "decimal",
+      "tolerance": "0.02",
+      "allow_nulls": false
+    },
+    {
+      "source": "currency",
+      "target": "currency_code",
+      "type": "string",
+      "trim": true,
+      "case_insensitive": true,
+      "allow_nulls": false
+    }
+  ],
+  "aggregates": [
+    {
+      "name": "Invoice amount total",
+      "source": "amount",
+      "target": "total",
+      "tolerance": "0.02"
+    }
+  ],
+  "null_tokens": ["", "null", "none", "n/a"],
+  "unmatched_source_severity": "error",
+  "unmatched_target_severity": "error",
+  "duplicate_severity": "error",
+  "max_findings": 1000
+}
