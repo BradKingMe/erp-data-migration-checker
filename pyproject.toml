@@ -12,6 +12,9 @@ license = "MIT"
 authors = [{ name = "Brad King" }]
 dependencies = []
 
+[project.optional-dependencies]
+ui = ["streamlit>=1.51", "pandas>=2.0"]
+
 [project.scripts]
 erp-migration-check = "erp_migration_checker.cli:main"
 

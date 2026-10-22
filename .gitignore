@@ -9,3 +9,9 @@ reports/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+GATES.md
+.impeccable/

@@ -38,6 +38,51 @@
       "trim": true,
       "case_insensitive": true,
       "allow_nulls": false
+    },
+    {
+      "source": "due_date",
+      "target": "due_date",
+      "type": "date",
+      "source_formats": ["%Y-%m-%d", "%m/%d/%Y"],
+      "target_formats": ["%Y-%m-%d", "%m/%d/%Y"],
+      "allow_nulls": false
+    },
+    {
+      "source": "tax_amount",
+      "target": "tax_total",
+      "type": "decimal",
+      "tolerance": "0.02",
+      "allow_nulls": false
+    },
+    {
+      "source": "invoice_total",
+      "target": "total_amount",
+      "type": "decimal",
+      "tolerance": "0.02",
+      "allow_nulls": false
+    },
+    {
+      "source": "payment_terms",
+      "target": "terms",
+      "type": "string",
+      "trim": true,
+      "case_insensitive": true,
+      "allow_nulls": false
+    },
+    {
+      "source": "line_count",
+      "target": "line_count",
+      "type": "decimal",
+      "tolerance": "0",
+      "allow_nulls": false
+    },
+    {
+      "source": "status",
+      "target": "status",
+      "type": "string",
+      "trim": true,
+      "case_insensitive": true,
+      "allow_nulls": false
     }
   ],
   "aggregates": [

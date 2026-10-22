@@ -18,8 +18,8 @@ def markdown_report(report: ComparisonReport, include_values: bool = False) -> s
     lines = [
         f"# Migration comparison: {report.status}",
         "",
-        f"- Source extract: `{_cell(report.source_file)}` ({report.source_row_count} rows)",
-        f"- Target extract: `{_cell(report.target_file)}` ({report.target_row_count} rows)",
+        f"- Source extract: {_cell(report.source_file)} ({report.source_row_count} rows)",
+        f"- Target extract: {_cell(report.target_file)} ({report.target_row_count} rows)",
         f"- Matched unique keys: {report.matched_key_count}",
         f"- Findings: {summary['errors']} error(s), {summary['warnings']} warning(s)",
         f"- Raw row values included: {'yes' if include_values else 'no'}",
@@ -108,4 +108,7 @@ def write_report(path: Path, content: str, protected_inputs: tuple[Path, ...]) -
 
 
 def _cell(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ").replace("\r", " ")
+    text = value.replace("\r", " ").replace("\n", " ")
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    special = set("\\`*_{}[]()#+-.!|")
+    return "".join(f"\\{char}" if char in special else char for char in text)

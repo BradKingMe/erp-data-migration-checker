@@ -26,6 +26,19 @@ python -m pip install -e .
 erp-migration-check --config examples/migration.json --source examples/source_invoices.csv --target examples/target_invoices.csv
 ```
 
+## Interactive Migration Workbench
+
+The optional Streamlit interface adds an exception review desk around the same comparison engine. It starts with bundled synthetic invoices, supports local CSV uploads, lets you edit key, field, and aggregate mappings, and exports a redacted audit pack.
+
+```powershell
+python -m pip install -e ".[ui]"
+python -m streamlit run app.py
+```
+
+The app processes uploads in the running Streamlit process and uses short-lived temporary files only while the existing engine compares the extracts. A local run stays on your computer. If you deploy the app to a hosted server, that server processes the uploaded files. Values from uploaded files are hidden in the review screen by default; the bundled synthetic example shows its sample values. The default audit pack redacts values. Including source extracts in the ZIP is optional and off by default.
+
+The interface does not connect to NetSuite, SAS, databases, or other live systems. It is a CSV review layer; mappings, tolerances, populations, and cutover sign-off remain business decisions.
+
 ## What it checks
 
 - Joins records on one or more explicitly mapped key columns. Key values are trimmed by default and remain case-sensitive unless configured otherwise.
