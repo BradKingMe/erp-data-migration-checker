@@ -79,3 +79,9 @@ This release compares one source CSV with one target CSV at a time and loads bot
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
+
+## Code audit and limits
+
+The CLI and interface accept up to 25 MB per extract, 100,000 data rows, 1,000 columns, and 1,000,000 data cells. Unsupported input is rejected rather than partially compared. CSV parsing uses strict quote handling and rejects invalid UTF-8 and NUL text. Decimal values and tolerances support up to 1,000 significant digits and exponent magnitude 1,000; larger numbers are rejected as invalid.
+
+Run `python -m unittest discover -s tests -p test_engine.py` for standalone engine checks. With the UI extra installed, run `python tests/run_audit.py` for Streamlit state, report, and privacy checks. The audit used Streamlit 1.66.1 on Windows; older supported versions have not all been executed. Upload controls use the version-compatible global size setting plus parser limits.

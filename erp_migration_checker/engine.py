@@ -28,10 +28,8 @@ def compare_files(
     config: CheckConfig,
     include_values: bool = False,
 ) -> ComparisonReport:
-    source_rows = _read_csv(source_path)
-    target_rows = _read_csv(target_path)
-    _require_columns({pair.source for pair in config.keys} | {rule.source for rule in config.fields} | {r.source for r in config.aggregates}, source_path)
-    _require_columns({pair.target for pair in config.keys} | {rule.target for rule in config.fields} | {r.target for r in config.aggregates}, target_path)
+    source_rows = _read_csv(source_path, {pair.source for pair in config.keys} | {rule.source for rule in config.fields} | {r.source for r in config.aggregates})
+    target_rows = _read_csv(target_path, {pair.target for pair in config.keys} | {rule.target for rule in config.fields} | {r.target for r in config.aggregates})
 
     findings: list[Finding] = []
     truncated = False
@@ -162,10 +160,12 @@ def compare_files(
     )
 
 
-def _read_csv(path: Path) -> list[CsvRecord]:
+def _read_csv(path: Path, required: set[str] | None = None) -> list[CsvRecord]:
     try:
+        if path.stat().st_size > 25 * 1024 * 1024:
+            raise DataError(f"{path.name} exceeds the 25 MB input limit.")
         with path.open("r", encoding="utf-8-sig", newline="") as stream:
-            reader = csv.reader(stream)
+            reader = csv.reader(stream, strict=True)
             try:
                 headers = next(reader)
             except StopIteration as exc:
@@ -174,12 +174,21 @@ def _read_csv(path: Path) -> list[CsvRecord]:
                 raise DataError(f"{path.name} contains a blank column name.")
             if len(set(headers)) != len(headers):
                 raise DataError(f"{path.name} contains duplicate column names.")
+            if len(headers) > 1000 or any('\x00' in header for header in headers):
+                raise DataError(f"{path.name} has too many columns or contains NUL characters.")
+            missing = sorted((required or set()) - set(headers))
+            if missing:
+                raise DataError(f"{path.name} is missing mapped column(s): {', '.join(missing)}.")
             rows: list[CsvRecord] = []
             record_number = 1
             for values in reader:
                 if not values:
                     continue
                 record_number += 1
+                if record_number > 100001 or (record_number - 1) * len(headers) > 1000000:
+                    raise DataError(f"{path.name} exceeds the 100,000 row or 1,000,000 cell limit.")
+                if any('\x00' in value for value in values):
+                    raise DataError(f"{path.name} contains NUL characters; export as UTF-8 CSV.")
                 if len(values) != len(headers):
                     raise DataError(
                         f"{path.name} has {len(values)} values for {len(headers)} columns on CSV line {reader.line_num}."
@@ -190,6 +199,8 @@ def _read_csv(path: Path) -> list[CsvRecord]:
         raise DataError(f"Could not read {path.name}: {exc}") from exc
     except csv.Error as exc:
         raise DataError(f"Could not parse {path.name}: {exc}") from exc
+    except UnicodeError as exc:
+        raise DataError(f"{path.name} is not valid UTF-8 CSV.") from exc
 
 
 def _require_columns(required: set[str], path: Path) -> None:
@@ -375,11 +386,13 @@ def _working_precision(values: list[Decimal], item_count: int) -> int:
 
 
 def _parse_decimal(value: str) -> Decimal | None:
+    if len(value) > 1000:
+        return None
     try:
         parsed = Decimal(value.strip())
     except (InvalidOperation, ValueError):
         return None
-    return parsed if parsed.is_finite() else None
+    return parsed if parsed.is_finite() and abs(parsed.as_tuple().exponent) <= 1000 and len(parsed.as_tuple().digits) <= 1000 else None
 
 
 def _parse_date(value: str, formats: tuple[str, ...]) -> date | None:

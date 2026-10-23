@@ -268,21 +268,29 @@ def safe_filename(name: str, fallback: str) -> str:
 
 
 def decode_csv(payload: bytes, filename: str) -> tuple[list[str], dict[int, dict[str, str]]]:
+    if len(payload) > MAX_UPLOAD_MB * 1024 * 1024:
+        raise DataError(f"{filename} exceeds the 25 MB input limit.")
     try:
         text = payload.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
         raise DataError(f"{filename} is not UTF-8 CSV. Export it as UTF-8 and try again.") from exc
     try:
-        reader = csv.reader(io.StringIO(text, newline=""))
+        if '\x00' in text:
+            raise DataError(f"{filename} contains NUL characters; export as UTF-8 CSV.")
+        reader = csv.reader(io.StringIO(text, newline=""), strict=True)
         headers = next(reader, None)
         if not headers:
             raise DataError(f"{filename} is empty or has no header row.")
+        if len(headers) > 1000 or any(not column.strip() for column in headers) or len(set(headers)) != len(headers):
+            raise DataError(f"{filename} has invalid, duplicate, or too many column names.")
         records: dict[int, dict[str, str]] = {}
         record_number = 1
         for values in reader:
             if not values:
                 continue
             record_number += 1
+            if record_number > 100001 or (record_number - 1) * len(headers) > 1000000:
+                raise DataError(f"{filename} exceeds the 100,000 row or 1,000,000 cell limit.")
             if len(values) != len(headers):
                 raise DataError(f"{filename} has an invalid row width at CSV line {reader.line_num}.")
             records[record_number] = dict(zip(headers, values))
@@ -861,7 +869,7 @@ def render_setup_page(source_bytes: bytes | None, target_bytes: bytes | None, so
         left, right = st.columns(2)
         upload_changed = False
         with left:
-            source_upload = st.file_uploader("Source extract", type=["csv"], key="source-upload", max_upload_size=MAX_UPLOAD_MB)
+            source_upload = st.file_uploader("Source extract", type=["csv"], key="source-upload")
             if source_upload is not None:
                 new_bytes = source_upload.getvalue()
                 new_name = safe_filename(source_upload.name, "source.csv")
@@ -870,7 +878,7 @@ def render_setup_page(source_bytes: bytes | None, target_bytes: bytes | None, so
                     st.session_state.source_name = new_name
                     upload_changed = True
         with right:
-            target_upload = st.file_uploader("Target extract", type=["csv"], key="target-upload", max_upload_size=MAX_UPLOAD_MB)
+            target_upload = st.file_uploader("Target extract", type=["csv"], key="target-upload")
             if target_upload is not None:
                 new_bytes = target_upload.getvalue()
                 new_name = safe_filename(target_upload.name, "target.csv")
@@ -1154,7 +1162,7 @@ def render_review_page(
                     )
             st.markdown('<div class="mobile-queue-link"><a href="#exception-queue">Browse exceptions ↓</a></div>', unsafe_allow_html=True)
 
-            reveal = st.checkbox("Show source and target values", key="privacy_reveal", help="Raw values stay in this local app session and are excluded from the default audit pack.")
+            reveal = st.checkbox("Show source and target values", key="privacy_reveal", help="Raw values are processed by the running app (the server when hosted) and are excluded from the default audit pack.")
             if reveal and st.session_state.dataset_mode != "Bundled synthetic example":
                 st.markdown('<div class="privacy-note">Raw record values are visible on this screen. Exported reports remain redacted unless you separately include the source files.</div>', unsafe_allow_html=True)
 

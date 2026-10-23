@@ -20,6 +20,8 @@ def load_config(path: Path) -> CheckConfig:
         raise ConfigError(f"Could not read configuration: {exc}") from exc
     except json.JSONDecodeError as exc:
         raise ConfigError(f"Configuration is not valid JSON at line {exc.lineno}: {exc.msg}") from exc
+    except UnicodeError as exc:
+        raise ConfigError("Configuration must be UTF-8 JSON.") from exc
 
     root = _object(raw, "configuration")
     _only_keys(
@@ -187,6 +189,8 @@ def _decimal(value: Any, label: str) -> Decimal:
         raise ConfigError(f"{label} is not a valid decimal value.") from exc
     if not number.is_finite():
         raise ConfigError(f"{label} must be finite.")
+    if abs(number.as_tuple().exponent) > 1000 or len(number.as_tuple().digits) > 1000:
+        raise ConfigError(f"{label} exceeds supported decimal precision or exponent (1000).")
     return number
 
 
